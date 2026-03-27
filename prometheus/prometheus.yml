@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: dcgm-gpu-node-1
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["192.168.86.173:9400"]
+        labels:
+          node: gpu-node-1
+          service: gpu
+
+  - job_name: dcgm-gpu-node-2
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["192.168.86.176:9400"]
+        labels:
+          node: gpu-node-2
+          service: gpu
+
+  - job_name: vllm-inference-gpu-node-1
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["192.168.86.173:30080"]
+        labels:
+          node: gpu-node-1
+          service: inference
+          model: Qwen/Qwen2.5-7B-Instruct
+
+  - job_name: vllm-inference-gpu-node-2
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["192.168.86.176:30080"]
+        labels:
+          node: gpu-node-2
+          service: inference
+          model: Qwen/Qwen2.5-7B-Instruct
+
+  - job_name: vllm-embed-gpu-node-1
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["192.168.86.173:8001"]
+        labels:
+          node: gpu-node-1
+          service: embedding
+          model: BAAI/bge-m3
+
+  - job_name: vllm-embed-gpu-node-2
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["192.168.86.176:8001"]
+        labels:
+          node: gpu-node-2
+          service: embedding
+          model: BAAI/bge-m3

@@ -1,0 +1,4 @@
+.env
+secrets/grafana_cloud_rw
+
+*.deb

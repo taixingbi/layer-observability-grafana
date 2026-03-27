@@ -1,0 +1,27 @@
+# Ubuntu server-node-1: Prometheus scrapes GPU/vLLM; optional remote_write to Grafana Cloud.
+# Dashboards: ./dashboards (import in Grafana Cloud). No local Grafana container.
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: prometheus
+    environment:
+      GRAFANA_CLOUD_PROMETHEUS_URL: ${GRAFANA_CLOUD_PROMETHEUS_URL:-}
+      GRAFANA_CLOUD_PROMETHEUS_USER: ${GRAFANA_CLOUD_PROMETHEUS_USER:-}
+    entrypoint: ["/bin/sh", "/etc/prometheus/docker-entrypoint.sh"]
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - ./secrets:/run/prometheus-secrets:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  prometheus-data:
