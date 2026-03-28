@@ -3,10 +3,14 @@
 Prometheus on **server-node-1** (Docker) scrapes DCGM and vLLM on two GPU nodes. Optional **remote_write** sends metrics to [Grafana Cloud](https://grafana.com/docs/grafana-cloud/send-data/metrics/); dashboards are **imported** from [dashboards/](dashboards/). Targets match [plan.md](plan.md).
 
 ## Requirements
-
 - Docker Engine + Compose v2 ([Ubuntu install](https://docs.docker.com/engine/install/ubuntu/))
 - From server-node-1: reach scrape targets in [prometheus/prometheus.yml](prometheus/prometheus.yml)
 - For Grafana Cloud: outbound HTTPS to your `remote_write` host
+
+## .env 
+https://grafana.com/orgs/taixingbi/hosted-metrics/3067716
+GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus-prod-56-prod-us-east-2.grafana.net/api/prom/push
+GRAFANA_CLOUD_PROMETHEUS_USER=3067716
 
 ## Quick start
 
@@ -48,7 +52,9 @@ Allow **9090** only for clients that should use the local Prometheus UI. Scrapes
 
 ## Grafana Cloud UI
 
-Use the stack’s **Prometheus / Mimir** datasource. **Import** JSON from [dashboards/](dashboards/) (`gpu.json`, `inference.json`, `embedding.json`) and map the Prometheus datasource when asked.
+Use the stack’s **Prometheus / Mimir** datasource. **Import** JSON from [dashboards/](dashboards/) (`gpu.json`, `inference.json`, `embedding.json`). The import screen asks for **Prometheus** — pick your **hosted metrics** datasource (the one that receives `remote_write`), not an arbitrary empty Prometheus.
+
+If panels show **No data**, open **Explore** with that same datasource and run `DCGM_FI_DEV_GPU_UTIL{service="gpu"}`. Empty results mean metrics are not in Grafana Cloud yet (check Prometheus `remote_write` and that DCGM targets in [prometheus/prometheus.yml](prometheus/prometheus.yml) are reachable).
 
 ## Repo layout
 
