@@ -16,6 +16,7 @@ GRAFANA_CLOUD_PROMETHEUS_USER=3067716
 
 ```bash
 mkdir -p secrets
+sudo docker compose down
 docker compose up -d
 ```
 
@@ -45,23 +46,3 @@ curl -X POST http://localhost:9090/-/reload
 ```
 
 If remote_write env or token changed, **restart** the container instead of reload.
-
-## Firewall (UFW)
-
-Allow **9090** only for clients that should use the local Prometheus UI. Scrapes need **outbound** TCP to GPU targets; Grafana Cloud needs **outbound** HTTPS.
-
-## Grafana Cloud UI
-
-Use the stack’s **Prometheus / Mimir** datasource. **Import** JSON from [dashboards/](dashboards/) (`gpu.json`, `inference.json`, `embedding.json`). The import screen asks for **Prometheus** — pick your **hosted metrics** datasource (the one that receives `remote_write`), not an arbitrary empty Prometheus.
-
-If panels show **No data**, open **Explore** with that same datasource and run `DCGM_FI_DEV_GPU_UTIL{service="gpu"}`. Empty results mean metrics are not in Grafana Cloud yet (check Prometheus `remote_write` and that DCGM targets in [prometheus/prometheus.yml](prometheus/prometheus.yml) are reachable).
-
-## Repo layout
-
-| Path | Role |
-|------|------|
-| [prometheus/prometheus.yml](prometheus/prometheus.yml) | Scrape config (single source of truth) |
-| [prometheus/docker-entrypoint.sh](prometheus/docker-entrypoint.sh) | Injects `remote_write` when env vars are set |
-| [dashboards/](dashboards/) | Dashboards for Grafana Cloud import |
-
-Panels use Prometheus metrics as in vLLM’s `vllm:…` names plus `service="inference"` / `service="embedding"` labels from scrapes.
