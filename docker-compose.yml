@@ -8,10 +8,10 @@ services:
     environment:
       GRAFANA_CLOUD_PROMETHEUS_URL: ${GRAFANA_CLOUD_PROMETHEUS_URL:-}
       GRAFANA_CLOUD_PROMETHEUS_USER: ${GRAFANA_CLOUD_PROMETHEUS_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
     entrypoint: ["/bin/sh", "/etc/prometheus/docker-entrypoint.sh"]
     volumes:
       - ./prometheus:/etc/prometheus:ro
-      - ./secrets:/run/prometheus-secrets:ro
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"

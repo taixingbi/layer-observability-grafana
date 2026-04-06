@@ -1,48 +1,85 @@
 # Layer observability (Prometheus + Grafana Cloud)
 
-Prometheus on **server-node-1** (Docker) scrapes DCGM and vLLM on two GPU nodes. Optional **remote_write** sends metrics to [Grafana Cloud](https://grafana.com/docs/grafana-cloud/send-data/metrics/); dashboards are **imported** from [dashboards/](dashboards/). Targets match [plan.md](plan.md).
+Prometheus runs on this host and scrapes GPU/vLLM targets defined in `prometheus/prometheus.yml`.  
+Grafana Cloud remote write is optional and configured from `.env`.
 
-## Requirements
-- Docker Engine + Compose v2 ([Ubuntu install](https://docs.docker.com/engine/install/ubuntu/))
-- From server-node-1: reach scrape targets in [prometheus/prometheus.yml](prometheus/prometheus.yml)
-- For Grafana Cloud: outbound HTTPS to your `remote_write` host
+## Prerequisites
 
-## .env 
-https://grafana.com/orgs/taixingbi/hosted-metrics/3067716
-GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus-prod-56-prod-us-east-2.grafana.net/api/prom/push
-GRAFANA_CLOUD_PROMETHEUS_USER=3067716
+- Docker Engine with Compose v2
+- Network access from this host to all scrape targets in `prometheus/prometheus.yml`
+- Port `9090` available on this host
 
-## Quick start
+## Configuration
+
+Create `.env` from `.env.example`:
 
 ```bash
-mkdir -p secrets
-sudo docker compose down
-docker compose up -d
+cp .env.example .env
 ```
 
-- Prometheus: `http://<server>:9090` (on host: `http://localhost:9090`).
-- **Grafana Cloud:** in `.env`, set `GRAFANA_CLOUD_PROMETHEUS_URL` and `GRAFANA_CLOUD_PROMETHEUS_USER`, add token file [secrets/README](secrets/README), then `docker compose up -d` (see below).
+`.env` supports two modes:
 
-## Grafana Cloud remote_write
+- Local-only mode: leave all Grafana Cloud variables empty
+- Remote-write mode: set all three values
+  - `GRAFANA_CLOUD_PROMETHEUS_URL`
+  - `GRAFANA_CLOUD_PROMETHEUS_USER`
+  - `GRAFANA_CLOUD_API_KEY`
 
-1. Stack → **Send metrics** / hosted Prometheus: copy **remote write URL** and numeric **user** (instance ID).
-2. Create a token with **metrics:write** ([access policies](https://grafana.com/docs/grafana-cloud/account-management/authentication-and-permissions/access-policies/)).
-3. `printf '%s' 'YOUR_GRAFANA_CLOUD_TOKEN' > secrets/grafana_cloud_rw && chmod 600 secrets/grafana_cloud_rw`
-4. `.env`:
+If only some variables are set, remote write is disabled and Prometheus still starts in local-only mode.
 
-   ```bash
-   GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus-prod-....grafana.net/api/prom/push
-   GRAFANA_CLOUD_PROMETHEUS_USER=123456
-   ```
+## Start / restart
 
-5. `docker compose up -d`. Remote config is generated at container start; after changing `.env` or the token, run `docker compose up -d` again.
+```bash
+sudo docker compose down
+sudo docker compose up -d
+```
 
-## Config reload
+Access Prometheus:
 
-Edits to [prometheus/prometheus.yml](prometheus/prometheus.yml) (scrapes only):
+- `http://localhost:9090`
+
+## Enable Grafana Cloud remote write
+
+1. In Grafana Cloud hosted Prometheus, copy:
+   - remote write URL
+   - instance ID (user)
+2. Create an access policy token with `metrics:write`
+3. Put values in `.env`:
+
+```bash
+GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus-prod-....grafana.net/api/prom/push
+GRAFANA_CLOUD_PROMETHEUS_USER=123456
+GRAFANA_CLOUD_API_KEY=glc_xxx
+```
+
+4. Restart:
+
+```bash
+sudo docker compose up -d
+```
+
+## Apply config changes
+
+- Changed `prometheus/prometheus.yml` only:
 
 ```bash
 curl -X POST http://localhost:9090/-/reload
 ```
 
-If remote_write env or token changed, **restart** the container instead of reload.
+- Changed `.env` (remote write settings): restart container with `docker compose up -d`
+
+## Troubleshooting
+
+Useful checks:
+
+```bash
+sudo docker compose ps
+sudo docker compose logs --tail=100 prometheus
+curl -sf http://localhost:9090/-/healthy
+```
+
+Common issues:
+
+- Container is not running due to startup/config errors
+- Remote write vars are incomplete (`URL`, `USER`, `API_KEY` must all be set)
+- Port `9090` is already in use by another process
